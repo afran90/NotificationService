@@ -5,6 +5,6 @@ namespace NotificationService.Application.UserSubscription.Services;
 
 public interface IUserSubscriptionService
 {
-    Task<UserSubscriptionEntity> CreateAsync(CreateUserSubscriptionRequest request, CancellationToken cancellationToken = default);
+    Task<UserSubscriptionEntity> UpdateAsync(CreateUserSubscriptionRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<UserSubscriptionEntity>> GetByUserAsync(Guid userId, CancellationToken cancellationToken = default);
 }

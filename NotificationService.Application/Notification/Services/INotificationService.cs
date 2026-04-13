@@ -5,6 +5,7 @@ namespace NotificationService.Application.Notification.Services;
 
 public interface INotificationService
 {
-    Task<NotificationEntity> CreateAsync(CreateNotificationRequest request, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<NotificationEntity>> GetByUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<NotificationEntity> SendAsync(CreateNotificationRequest request, CancellationToken cancellationToken = default);
+    Task<PagedNotificationsResponse> GetByUserAsync(Guid userId, GetUserNotificationsRequest request, CancellationToken cancellationToken = default);
+    Task<NotificationEntity?> MarkAsReadAsync(MarkNotificationAsReadRequest request, CancellationToken cancellationToken = default);
 }

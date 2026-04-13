@@ -6,7 +6,7 @@ namespace NotificationService.Application.UserSubscription.Services;
 
 public class UserSubscriptionService(IUserSubscriptionRepository repository) : IUserSubscriptionService
 {
-    public async Task<UserSubscriptionEntity> CreateAsync(CreateUserSubscriptionRequest request, CancellationToken cancellationToken = default)
+    public async Task<UserSubscriptionEntity> UpdateAsync(CreateUserSubscriptionRequest request, CancellationToken cancellationToken = default)
     {
         var entity = new UserSubscriptionEntity
         {
@@ -15,7 +15,7 @@ public class UserSubscriptionService(IUserSubscriptionRepository repository) : I
             IsSubscribed = request.IsSubscribed
         };
 
-        return await repository.AddAsync(entity, cancellationToken);
+        return await repository.UpsertAsync(entity, cancellationToken);
     }
 
     public Task<IReadOnlyList<UserSubscriptionEntity>> GetByUserAsync(Guid userId, CancellationToken cancellationToken = default)

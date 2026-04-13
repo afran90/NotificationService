@@ -13,9 +13,11 @@ This solution is built with `.NET 10` and C# and is organized into four projects
 
 The API currently provides endpoints for:
 
-- Creating and listing notifications per user
-- Creating and listing user subscriptions per user
-- Updating and listing notification deliveries
+- `POST /notifications/send` — send a notification to a user
+- `GET /notifications/{userId}?page=1&pageSize=20` — get latest notifications for a user with pagination
+- `POST /notifications/read` — mark a notification as read
+- `POST /subscriptions/update` — subscribe or unsubscribe a user from a notification type
+- Notification delivery status update/list endpoints
 
 ## Tech Stack
 

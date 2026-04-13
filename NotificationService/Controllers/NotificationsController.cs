@@ -5,20 +5,32 @@ using NotificationService.Application.Notification.Services;
 namespace NotificationService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("notifications")]
 public class NotificationsController(INotificationService notificationService) : ControllerBase
 {
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateNotificationRequest request, CancellationToken cancellationToken)
+    [HttpPost("send")]
+    public async Task<IActionResult> Send([FromBody] CreateNotificationRequest request, CancellationToken cancellationToken)
     {
-        var notification = await notificationService.CreateAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetByUser), new { userId = notification.UserId }, notification);
+        var notification = await notificationService.SendAsync(request, cancellationToken);
+        return Ok(notification);
     }
 
-    [HttpGet("users/{userId:guid}")]
-    public async Task<IActionResult> GetByUser(Guid userId, CancellationToken cancellationToken)
+    [HttpGet("{userId:guid}")]
+    public async Task<IActionResult> GetByUser(Guid userId, [FromQuery] GetUserNotificationsRequest request, CancellationToken cancellationToken)
     {
-        var notifications = await notificationService.GetByUserAsync(userId, cancellationToken);
+        var notifications = await notificationService.GetByUserAsync(userId, request, cancellationToken);
         return Ok(notifications);
+    }
+
+    [HttpPost("read")]
+    public async Task<IActionResult> MarkAsRead([FromBody] MarkNotificationAsReadRequest request, CancellationToken cancellationToken)
+    {
+        var notification = await notificationService.MarkAsReadAsync(request, cancellationToken);
+        if (notification is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(notification);
     }
 }
