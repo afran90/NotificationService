@@ -14,9 +14,10 @@ public class NotificationApplicationService(
         var entity = new NotificationEntity
         {
             UserId = request.UserId,
-            Channel = request.Channel,
-            Subject = request.Subject,
-            Body = request.Body
+            Type = request.Type,
+            Title = request.Title,
+            Message = request.Message,
+            Metadata = request.Metadata
         };
 
         var created = await notificationRepository.AddAsync(entity, cancellationToken);
@@ -24,9 +25,9 @@ public class NotificationApplicationService(
         {
             created.Id,
             created.UserId,
-            created.Channel,
-            created.Subject,
-            created.Body
+            created.Type,
+            created.Title,
+            created.Message
         }, cancellationToken);
 
         return created;

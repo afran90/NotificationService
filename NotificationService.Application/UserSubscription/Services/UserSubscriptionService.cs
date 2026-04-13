@@ -11,9 +11,8 @@ public class UserSubscriptionService(IUserSubscriptionRepository repository) : I
         var entity = new UserSubscriptionEntity
         {
             UserId = request.UserId,
-            Channel = request.Channel,
-            Endpoint = request.Endpoint,
-            IsActive = true
+            NotificationType = request.NotificationType,
+            IsSubscribed = request.IsSubscribed
         };
 
         return await repository.AddAsync(entity, cancellationToken);

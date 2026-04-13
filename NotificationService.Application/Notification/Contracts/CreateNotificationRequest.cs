@@ -1,7 +1,10 @@
+using NotificationService.Domain.Notification.Enums;
+
 namespace NotificationService.Application.Notification.Contracts;
 
 public sealed record CreateNotificationRequest(
     Guid UserId,
-    string Channel,
-    string Subject,
-    string Body);
+    NotificationType Type,
+    string Title,
+    string Message,
+    string? Metadata = null);

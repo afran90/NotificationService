@@ -1,6 +1,8 @@
+using NotificationService.Domain.Notification.Enums;
+
 namespace NotificationService.Application.UserSubscription.Contracts;
 
 public sealed record CreateUserSubscriptionRequest(
     Guid UserId,
-    string Channel,
-    string Endpoint);
+    NotificationType NotificationType,
+    bool IsSubscribed = true);
