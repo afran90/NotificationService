@@ -3,4 +3,6 @@
   <Project Path="NotificationService.Domain/NotificationService.Domain.csproj" />
   <Project Path="NotificationService.Infrastructure/NotificationService.Infrastructure.csproj" />
   <Project Path="NotificationService/NotificationService.csproj" />
-</Solution>
+  <Project Path="NotificationService.Worker/NotificationService.Worker.csproj" />`r`n</Solution>
+
+

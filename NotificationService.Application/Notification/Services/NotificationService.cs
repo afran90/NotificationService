@@ -1,6 +1,6 @@
-using NotificationService.Application.Abstractions.Messaging;
 using NotificationService.Application.Notification.Abstractions;
 using NotificationService.Application.Notification.Contracts;
+using NotificationService.Application.UserSubscription.Abstractions;
 using NotificationService.Domain.Notification.Enums;
 using NotificationEntity = NotificationService.Domain.Notification.Entities.Notification;
 
@@ -8,10 +8,15 @@ namespace NotificationService.Application.Notification.Services;
 
 public class NotificationApplicationService(
     INotificationRepository notificationRepository,
-    IMessagePublisher messagePublisher) : INotificationService
+    IUserSubscriptionRepository userSubscriptionRepository) : INotificationService
 {
-    public async Task<NotificationEntity> SendAsync(CreateNotificationRequest request, CancellationToken cancellationToken = default)
+    public async Task<NotificationEntity?> SendAsync(CreateNotificationRequest request, CancellationToken cancellationToken = default)
     {
+        if (!await CanSendAsync(request.UserId, request.Type, cancellationToken))
+        {
+            return null;
+        }
+
         var entity = new NotificationEntity
         {
             UserId = request.UserId,
@@ -21,15 +26,13 @@ public class NotificationApplicationService(
             Metadata = request.Metadata
         };
 
-        var created = await notificationRepository.AddAsync(entity, cancellationToken);
-        await messagePublisher.PublishAsync("notifications.created", new
-        {
-            created.Id,
-            created.UserId,
-            created.Type,
-            created.Title,
-            created.Message
-        }, cancellationToken);
+        var created = await notificationRepository.AddAsync(entity, new NotificationMessage(
+            entity.Id,
+            entity.UserId,
+            entity.Type,
+            entity.Title,
+            entity.Message,
+            entity.Metadata), cancellationToken);
 
         return created;
     }
@@ -49,21 +52,16 @@ public class NotificationApplicationService(
         };
     }
 
-    public async Task<NotificationEntity?> MarkAsReadAsync(MarkNotificationAsReadRequest request, CancellationToken cancellationToken = default)
+    public Task<NotificationEntity?> MarkAsReadAsync(MarkNotificationAsReadRequest request, CancellationToken cancellationToken = default)
     {
-        var notification = await notificationRepository.MarkAsReadAsync(request.NotificationId, cancellationToken);
-        if (notification is null)
-        {
-            return null;
-        }
+        return notificationRepository.MarkAsReadAsync(request.NotificationId, cancellationToken);
+    }
 
-        await messagePublisher.PublishAsync("notifications.read", new
-        {
-            notification.Id,
-            notification.UserId,
-            Status = NotificationStatus.Read
-        }, cancellationToken);
+    private async Task<bool> CanSendAsync(Guid userId, NotificationType notificationType, CancellationToken cancellationToken)
+    {
+        var subscriptions = await userSubscriptionRepository.GetByUserAsync(userId, cancellationToken);
+        var subscription = subscriptions.FirstOrDefault(x => x.NotificationType == notificationType);
 
-        return notification;
+        return subscription is null || subscription.IsSubscribed;
     }
 }

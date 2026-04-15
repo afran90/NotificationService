@@ -12,6 +12,11 @@ public class NotificationsController(INotificationService notificationService) :
     public async Task<IActionResult> Send([FromBody] CreateNotificationRequest request, CancellationToken cancellationToken)
     {
         var notification = await notificationService.SendAsync(request, cancellationToken);
+        if (notification is null)
+        {
+            return BadRequest(new { message = "The user is not subscribed to this notification type." });
+        }
+
         return Ok(notification);
     }
 

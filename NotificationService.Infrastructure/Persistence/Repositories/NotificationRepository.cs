@@ -1,15 +1,35 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using NotificationService.Application.Notification.Abstractions;
+using NotificationService.Application.Notification.Contracts;
 using NotificationService.Domain.Notification.Enums;
+using NotificationOutboxMessageEntity = NotificationService.Domain.Notification.Entities.NotificationOutboxMessage;
 using NotificationEntity = NotificationService.Domain.Notification.Entities.Notification;
 
 namespace NotificationService.Infrastructure.Persistence.Repositories;
 
 public class NotificationRepository(NotificationDbContext dbContext) : INotificationRepository
 {
-    public async Task<NotificationEntity> AddAsync(NotificationEntity notification, CancellationToken cancellationToken = default)
+    private static readonly JsonSerializerOptions JsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public async Task<NotificationEntity> AddAsync(NotificationEntity notification, NotificationMessage? outboxMessage = null, CancellationToken cancellationToken = default)
     {
         dbContext.Notifications.Add(notification);
+
+        if (outboxMessage is not null)
+        {
+            dbContext.NotificationOutboxMessages.Add(new NotificationOutboxMessageEntity
+            {
+                NotificationId = outboxMessage.NotificationId,
+                EventType = "notification.created",
+                RoutingKey = "notifications.created",
+                Payload = JsonSerializer.Serialize(outboxMessage, JsonSerializerOptions)
+            });
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
         return notification;
     }

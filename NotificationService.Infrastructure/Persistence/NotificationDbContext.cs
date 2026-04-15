@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NotificationEntity = NotificationService.Domain.Notification.Entities.Notification;
 using NotificationDeliveryEntity = NotificationService.Domain.NotificationDelivery.Entities.NotificationDelivery;
+using NotificationOutboxMessageEntity = NotificationService.Domain.Notification.Entities.NotificationOutboxMessage;
 using UserSubscriptionEntity = NotificationService.Domain.UserSubscription.Entities.UserSubscription;
 using NotificationTemplateEntity = NotificationService.Domain.Notification.Entities.NotificationTemplate;
 
@@ -12,6 +13,7 @@ public class NotificationDbContext(DbContextOptions<NotificationDbContext> optio
     public DbSet<UserSubscriptionEntity> UserSubscriptions => Set<UserSubscriptionEntity>();
     public DbSet<NotificationDeliveryEntity> NotificationDeliveries => Set<NotificationDeliveryEntity>();
     public DbSet<NotificationTemplateEntity> NotificationTemplates => Set<NotificationTemplateEntity>();
+    public DbSet<NotificationOutboxMessageEntity> NotificationOutboxMessages => Set<NotificationOutboxMessageEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -97,6 +99,29 @@ public class NotificationDbContext(DbContextOptions<NotificationDbContext> optio
             // Indexes
             entity.HasIndex(x => x.Name).IsUnique();
             entity.HasIndex(x => x.ChannelType);
+        });
+
+        modelBuilder.Entity<NotificationOutboxMessageEntity>(entity =>
+        {
+            entity.ToTable("notification_outbox_messages");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
+            entity.Property(x => x.NotificationId).IsRequired();
+            entity.Property(x => x.EventType).HasMaxLength(128).IsRequired();
+            entity.Property(x => x.RoutingKey).HasMaxLength(256).IsRequired();
+            entity.Property(x => x.Payload).HasColumnType("jsonb").IsRequired();
+            entity.Property(x => x.Status).IsRequired();
+            entity.Property(x => x.Attempts).IsRequired();
+            entity.Property(x => x.LockedAtUtc);
+            entity.Property(x => x.ProcessedAtUtc);
+            entity.Property(x => x.NextAttemptAtUtc);
+            entity.Property(x => x.LastError).HasMaxLength(2048);
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc);
+
+            // Indexes
+            entity.HasIndex(x => x.NotificationId).IsUnique();
+            entity.HasIndex(x => new { x.Status, x.NextAttemptAtUtc });
         });
     }
 }

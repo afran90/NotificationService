@@ -19,6 +19,8 @@ The API currently provides endpoints for:
 - `POST /subscriptions/update` — subscribe or unsubscribe a user from a notification type
 - Notification delivery status update/list endpoints
 
+`POST /notifications/send` validates the user's subscription preferences before creating the notification. If the user has unsubscribed from that notification type, the API returns `400 Bad Request`.
+
 ## Tech Stack
 
 - ASP.NET Core Web API
