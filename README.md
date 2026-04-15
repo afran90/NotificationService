@@ -22,6 +22,15 @@ The API currently provides endpoints for:
 
 `POST /notifications/send` validates the user's subscription preferences before creating the notification. If the user has unsubscribed from that notification type, the API returns `400 Bad Request`.
 
+## Notification Read Cache
+
+To improve notification read performance, the API keeps a Redis cache per user:
+
+- Cache key: `user_notifications:{userId}`
+- Cached payload: latest `50` notifications for that user
+- On notification creation: cache is refreshed with the latest 50 records
+- On `GET /notifications/{userId}`: API reads from Redis first and falls back to PostgreSQL when the cache is missing or cannot satisfy the requested page range
+
 ## Delivery Pipeline
 
 1. API writes notification + outbox message in the same transaction.
@@ -136,6 +145,9 @@ Configure these sections before running:
 
 - `ConnectionStrings:Postgres`
 - `Redis:ConnectionString`
+- `NotificationCache` settings:
+  - `CachedNotificationsLimit`
+  - `CacheTtl`
 - `RabbitMq` settings:
   - `Exchange`, `DeadLetterExchange`
   - `PushQueue`, `EmailQueue`, `SmsQueue`
