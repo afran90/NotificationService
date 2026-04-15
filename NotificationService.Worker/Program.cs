@@ -20,8 +20,11 @@ builder.Services.AddSingleton<IConnectionFactory>(_ =>
         Password = options.Password
     };
 });
+
 builder.Services.AddHostedService<NotificationOutboxPublisher>();
-builder.Services.AddHostedService<NotificationConsumer>();
+builder.Services.AddHostedService<PushNotificationWorker>();
+builder.Services.AddHostedService<EmailNotificationWorker>();
+builder.Services.AddHostedService<SmsNotificationWorker>();
 
 var host = builder.Build();
 host.Run();

@@ -25,7 +25,7 @@ public class NotificationRepository(NotificationDbContext dbContext) : INotifica
             {
                 NotificationId = outboxMessage.NotificationId,
                 EventType = "notification.created",
-                RoutingKey = "notifications.created",
+                RoutingKey = GetCreatedRoutingKey(outboxMessage.Type),
                 Payload = JsonSerializer.Serialize(outboxMessage, JsonSerializerOptions)
             });
         }
@@ -62,5 +62,33 @@ public class NotificationRepository(NotificationDbContext dbContext) : INotifica
         }
 
         return entity;
+    }
+
+    public async Task<NotificationEntity?> MarkAsDeliveredAsync(Guid notificationId, DateTime deliveredAtUtc, CancellationToken cancellationToken = default)
+    {
+        var entity = await dbContext.Notifications.FirstOrDefaultAsync(x => x.Id == notificationId, cancellationToken);
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.DeliveredAtUtc = deliveredAtUtc;
+        entity.UpdatedAtUtc = deliveredAtUtc;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return entity;
+    }
+
+    private static string GetCreatedRoutingKey(NotificationType type)
+    {
+        return type switch
+        {
+            NotificationType.Push => "notifications.created.push",
+            NotificationType.Email => "notifications.created.email",
+            NotificationType.SMS => "notifications.created.sms",
+            NotificationType.InApp => "notifications.created.inapp",
+            _ => "notifications.created.unknown"
+        };
     }
 }

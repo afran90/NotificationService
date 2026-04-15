@@ -4,12 +4,13 @@ A clean architecture-based ASP.NET Core Web API for managing notifications, user
 
 ## Description
 
-This solution is built with `.NET 10` and C# and is organized into four projects:
+This solution is built with `.NET 10` and C# and is organized into five projects:
 
 - `NotificationService` (API layer)
 - `NotificationService.Application` (application services/contracts)
 - `NotificationService.Domain` (domain entities/enums)
-- `NotificationService.Infrastructure` (PostgreSQL, Redis, RabbitMQ integrations)
+- `NotificationService.Infrastructure` (PostgreSQL + Redis persistence/integrations)
+- `NotificationService.Worker` (outbox publisher + channel delivery workers)
 
 The API currently provides endpoints for:
 
@@ -21,9 +22,23 @@ The API currently provides endpoints for:
 
 `POST /notifications/send` validates the user's subscription preferences before creating the notification. If the user has unsubscribed from that notification type, the API returns `400 Bad Request`.
 
+## Delivery Pipeline
+
+1. API writes notification + outbox message in the same transaction.
+2. `NotificationOutboxPublisher` publishes pending outbox messages to RabbitMQ.
+3. Channel workers consume channel-specific messages:
+   - `PushNotificationWorker`
+   - `EmailNotificationWorker`
+   - `SmsNotificationWorker`
+4. Worker updates:
+   - `notification_deliveries` status (`Sent`, `Retrying`, `Failed`)
+   - `notifications.DeliveredAtUtc` on successful delivery
+5. Failed messages are retried up to configured attempts, then published to Dead Letter Queue (DLQ).
+
 ## Tech Stack
 
 - ASP.NET Core Web API
+- .NET Worker Service
 - Entity Framework Core + PostgreSQL
 - Redis cache
 - RabbitMQ messaging
@@ -107,24 +122,36 @@ Template definitions for notification formatting and rendering.
 
 ## Configuration
 
-Main settings are in:
+API settings are in:
 
 - `NotificationService/appsettings.json`
 - `NotificationService/appsettings.Development.json`
+
+Worker settings are in:
+
+- `NotificationService.Worker/appsettings.json`
+- `NotificationService.Worker/appsettings.Development.json`
 
 Configure these sections before running:
 
 - `ConnectionStrings:Postgres`
 - `Redis:ConnectionString`
-- `RabbitMq` settings (`HostName`, `Port`, `UserName`, `Password`, `Exchange`)
+- `RabbitMq` settings:
+  - `Exchange`, `DeadLetterExchange`
+  - `PushQueue`, `EmailQueue`, `SmsQueue`
+  - `PushRoutingKey`, `EmailRoutingKey`, `SmsRoutingKey`
+  - `PushDeadLetterQueue`, `EmailDeadLetterQueue`, `SmsDeadLetterQueue`
+  - `PushDeadLetterRoutingKey`, `EmailDeadLetterRoutingKey`, `SmsDeadLetterRoutingKey`
+  - `MaxDeliveryAttempts`, `RetryDelayMilliseconds`
 
-## Run the API
+## Run the API + Worker
 
 From the solution root:
 
 1. Restore dependencies
-2. Run the API project (`NotificationService`)
-3. Open Swagger in development mode to test endpoints
+2. Run API project (`NotificationService`)
+3. Run worker project (`NotificationService.Worker`)
+4. Open Swagger in development mode to test API endpoints
 
 Health check endpoint:
 

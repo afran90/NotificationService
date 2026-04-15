@@ -39,4 +39,13 @@ public class NotificationDeliveryRepository(NotificationDbContext dbContext) : I
             .OrderByDescending(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
+
+    public Task<int> CountAttemptsAsync(Guid notificationId, string destination, CancellationToken cancellationToken = default)
+    {
+        return dbContext.NotificationDeliveries
+            .Where(x => x.NotificationId == notificationId
+                && x.Destination == destination
+                && (x.Status == DeliveryStatus.Retrying || x.Status == DeliveryStatus.Failed))
+            .CountAsync(cancellationToken);
+    }
 }

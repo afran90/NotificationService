@@ -8,4 +8,5 @@ public interface INotificationRepository
     Task<NotificationEntity> AddAsync(NotificationEntity notification, NotificationMessage? outboxMessage = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<NotificationEntity>> GetByUserAsync(Guid userId, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<NotificationEntity?> MarkAsReadAsync(Guid notificationId, CancellationToken cancellationToken = default);
+    Task<NotificationEntity?> MarkAsDeliveredAsync(Guid notificationId, DateTime deliveredAtUtc, CancellationToken cancellationToken = default);
 }
