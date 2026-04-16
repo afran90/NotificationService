@@ -3,12 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NotificationService.Application.Notification.Abstractions;
 using NotificationService.Application.Notification.Contracts;
-using NotificationService.Application.NotificationDelivery.Abstractions;
+using NotificationService.Application.NotificationDelivery.Services;
 using NotificationService.Domain.Notification.Enums;
 using NotificationService.Domain.NotificationDelivery.Enums;
-using NotificationDeliveryEntity = NotificationService.Domain.NotificationDelivery.Entities.NotificationDelivery;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -190,36 +188,17 @@ public abstract class NotificationDeliveryWorkerBase(
     private async Task<int> GetNextAttemptAsync(Guid notificationId, CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
-        var deliveryRepository = scope.ServiceProvider.GetRequiredService<INotificationDeliveryRepository>();
+        var deliveryService = scope.ServiceProvider.GetRequiredService<INotificationDeliveryService>();
 
-        var attempts = await deliveryRepository.CountAttemptsAsync(notificationId, Destination, cancellationToken);
-        return attempts + 1;
+        return await deliveryService.GetNextAttemptAsync(notificationId, Destination, cancellationToken);
     }
 
     private async Task PersistDeliveryResultAsync(Guid notificationId, DeliveryStatus status, string? reason, CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
+        var deliveryService = scope.ServiceProvider.GetRequiredService<INotificationDeliveryService>();
 
-        var deliveryRepository = scope.ServiceProvider.GetRequiredService<INotificationDeliveryRepository>();
-        var notificationRepository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
-
-        var now = DateTime.UtcNow;
-
-        var delivery = new NotificationDeliveryEntity
-        {
-            NotificationId = notificationId,
-            Destination = Destination,
-            Status = status,
-            FailureReason = reason,
-            DeliveredAtUtc = status == DeliveryStatus.Sent ? now : null
-        };
-
-        await deliveryRepository.AddAsync(delivery, cancellationToken);
-
-        if (status == DeliveryStatus.Sent)
-        {
-            await notificationRepository.MarkAsDeliveredAsync(notificationId, now, cancellationToken);
-        }
+        await deliveryService.RecordResultAsync(notificationId, Destination, status, reason, cancellationToken);
     }
 
     private static Task PublishToDeadLetterAsync(
